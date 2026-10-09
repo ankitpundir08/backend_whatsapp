@@ -31,6 +31,93 @@ app.post('/', (req, res) => {
   res.status(200).end();
 });
 
+
+///////////////////// meta defaults above this line ///////////////////////
+
+
+
+
+app.post("/test-booking-message", async (req, res) => {
+  try {
+    const {
+      name,
+      phone,
+      appointmentDate,
+      appointmentTime,
+      therapy,
+    } = req.body;
+
+    if (
+      !name ||
+      !phone ||
+      !appointmentDate ||
+      !appointmentTime ||
+      !therapy
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all booking details.",
+      });
+    }
+
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneNumberId = process.env.PHONE_NUMBER_ID;
+    const apiVersion = process.env.GRAPH_API_VERSION;
+
+    if (!token || !phoneNumberId || !apiVersion) {
+      return res.status(500).json({
+        success: false,
+        message: "WhatsApp API environment variables are missing.",
+      });
+    }
+
+    const response = await fetch(
+      `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: phone,
+          type: "text",
+          text: {
+            body: `Hi ${name}, your ${therapy} appointment is scheduled for ${appointmentDate} at ${appointmentTime}.`,
+          },
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Meta API error:", data);
+
+      return res.status(response.status).json({
+        success: false,
+        error: data,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Meta accepted the WhatsApp message request.",
+      metaResponse: data,
+    });
+  } catch (error) {
+    console.error("Server error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+});
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`\nListening on port ${port}\n`);
