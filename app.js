@@ -41,6 +41,7 @@ app.post("/", (req, res) => {
 app.post("/test-booking-message", async (req, res) => {
   try {
     const { phone, imageurl } = req.body;
+    console.log('Received request body:', req.body);
 
     if (!phone || !imageurl) {
       return res
