@@ -1,22 +1,27 @@
 // Import Express.js
-const express = require('express');
+const express = require("express");
 
 // Create an Express app
 const app = express();
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+app.use(express.static("public"));
 
 // Set port and verify_token
 const port = process.env.PORT || 3000;
 const verifyToken = process.env.VERIFY_TOKEN;
 
 // Route for GET requests
-app.get('/', (req, res) => {
-  const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
+app.get("/", (req, res) => {
+  const {
+    "hub.mode": mode,
+    "hub.challenge": challenge,
+    "hub.verify_token": token,
+  } = req.query;
 
-  if (mode === 'subscribe' && token === verifyToken) {
-    console.log('WEBHOOK VERIFIED');
+  if (mode === "subscribe" && token === verifyToken) {
+    console.log("WEBHOOK VERIFIED");
     res.status(200).send(challenge);
   } else {
     res.status(403).end();
@@ -24,51 +29,39 @@ app.get('/', (req, res) => {
 });
 
 // Route for POST requests
-app.post('/', (req, res) => {
-  const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+app.post("/", (req, res) => {
+  const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
   console.log(`\n\nWebhook received ${timestamp}\n`);
   console.log(JSON.stringify(req.body, null, 2));
   res.status(200).end();
 });
 
-
 ///////////////////// meta defaults above this line ///////////////////////
-
-
-
 
 app.post("/test-booking-message", async (req, res) => {
   try {
-    const {
-      name,
-      phone,
-      appointmentDate,
-      appointmentTime,
-      therapy,
-    } = req.body;
+    const { phone, imageurl } = req.body;
 
-    if (
-      !name ||
-      !phone ||
-      !appointmentDate ||
-      !appointmentTime ||
-      !therapy
-    ) {
+    if (!phone || !imageurl) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
+    if (!imageurl.startsWith("https://")) {
       return res.status(400).json({
         success: false,
-        message: "Please provide all booking details.",
+        message: "image url must start with https://",
       });
     }
 
     const token = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneNumberId = process.env.PHONE_NUMBER_ID;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
     const apiVersion = process.env.GRAPH_API_VERSION;
 
     if (!token || !phoneNumberId || !apiVersion) {
-      return res.status(500).json({
-        success: false,
-        message: "WhatsApp API environment variables are missing.",
-      });
+      return res
+        .status(500)
+        .json({ success: false, message: "Missing environment variables" });
     }
 
     const response = await fetch(
@@ -79,22 +72,39 @@ app.post("/test-booking-message", async (req, res) => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
           messaging_product: "whatsapp",
-          recipient_type: "individual",
+          receipient_type: "individual",
           to: phone,
-          type: "text",
-          text: {
-            body: `Hi ${name}, your ${therapy} appointment is scheduled for ${appointmentDate} at ${appointmentTime}.`,
+          type: "template",
+          template: {
+            name: "jaspers_market_image_cta_v1",
+            language: {
+              code: "en_US",
+            },
+            components: [
+              {
+                type: "header",
+                parameters: [
+                  {
+                    type: "image",
+                    image: {
+                      link: imageurl,
+                    },
+                  },
+                ],
+              },
+            ],
           },
         }),
-      }
+      },
     );
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Meta API error:", data);
+      console.error("META API ERROR: ", data);
 
       return res.status(response.status).json({
         success: false,
@@ -104,7 +114,8 @@ app.post("/test-booking-message", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Meta accepted the WhatsApp message request.",
+      message:
+        "Meta accepted the request and is processing it. Check the WhatsApp number for the message.",
       metaResponse: data,
     });
   } catch (error) {
@@ -116,7 +127,6 @@ app.post("/test-booking-message", async (req, res) => {
     });
   }
 });
-
 
 // Start the server
 app.listen(port, () => {
