@@ -56,7 +56,7 @@ app.post("/test-booking-message", async (req, res) => {
     }
 
     const token = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const phoneNumberId = process.env.PHONE_NUMBER_ID;
     const apiVersion = process.env.GRAPH_API_VERSION;
 
     if (!token || !phoneNumberId || !apiVersion) {
