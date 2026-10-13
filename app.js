@@ -41,7 +41,6 @@ app.post("/", (req, res) => {
 app.post("/test-booking-message", async (req, res) => {
   try {
     const { phone, imageurl } = req.body;
-    console.log('Received request body:', req.body);
 
     if (!phone || !imageurl) {
       return res
@@ -59,11 +58,7 @@ app.post("/test-booking-message", async (req, res) => {
     const phoneNumberId = process.env.PHONE_NUMBER_ID;
     const apiVersion = process.env.GRAPH_API_VERSION;
 
-    console.log({
-      tokenExists: Boolean(process.env.WHATSAPP_ACCESS_TOKEN),
-      phoneNumberIdExists: Boolean(process.env.PHONE_NUMBER_ID),
-      apiVersionExists: Boolean(process.env.GRAPH_API_VERSION)
-    });
+   
 
     if (!token || !phoneNumberId || !apiVersion) {
       return res
