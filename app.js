@@ -77,29 +77,10 @@ app.post("/test-booking-message", async (req, res) => {
 
         body: JSON.stringify({
           messaging_product: "whatsapp",
-          receipient_type: "individual",
           to: phone,
           type: "template",
-          template: {
-            name: "jaspers_market_image_cta_v1",
-            language: {
-              code: "en_US",
-            },
-            components: [
-              {
-                type: "header",
-                parameters: [
-                  {
-                    type: "image",
-                    image: {
-                      link: imageurl,
-                    },
-                  },
-                ],
-              },
-            ],
-          },
-        }),
+          template
+        })
       },
     );
 
